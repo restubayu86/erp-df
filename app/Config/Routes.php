@@ -14,10 +14,11 @@ $routes->group('', ['filter' => 'session'], static function (RouteCollection $ro
     // Akses divisi (division.dyeing / division.finishing) dicek di BaseModuleController.
     foreach (['dyeing' => 'Dyeing', 'finishing' => 'Finishing'] as $slug => $ns) {
         $routes->group($slug, ['namespace' => "App\\Modules\\{$ns}\\Controllers"], static function (RouteCollection $routes) {
-            // daftar, tabel, insight
+            // daftar, tabel, insight, cetak
             $routes->get('schedule',                 'Schedule::index',     ['filter' => 'permission:schedule.view']);
             $routes->get('schedule/datatable',       'Schedule::datatable', ['filter' => 'permission:schedule.view']);
             $routes->get('schedule/insight',         'Schedule::insight',   ['filter' => 'permission:schedule.view']);
+            $routes->get('schedule/print',           'Schedule::print',     ['filter' => 'permission:schedule.view']);
 
             // buat / salin (?copy_from=ID) / simpan
             $routes->get('schedule/create',          'Schedule::create',    ['filter' => 'permission:schedule.create']);
@@ -45,6 +46,16 @@ $routes->group('', ['filter' => 'session'], static function (RouteCollection $ro
 
     // Jam efektif shift pada tanggal tertentu (PRD 7)
     $routes->get('api/shift/effective', '\App\Modules\Core\Controllers\ShiftApi::effective', ['filter' => 'permission:schedule.view,operator.access']);
+
+    // API related schedule untuk kategori perbaikan
+    $routes->get('api/schedule/related', '\App\Modules\Core\Controllers\ScheduleApi::related', ['filter' => 'permission:schedule.view']);
+
+    // API Master Mesin
+    $routes->get('api/machines', '\App\Modules\Core\Controllers\MachineApi::index', ['filter' => 'permission:schedule.view']);
+    $routes->get('api/machines/types', '\App\Modules\Core\Controllers\MachineApi::types', ['filter' => 'permission:schedule.view']);
+    $routes->post('api/machines', '\App\Modules\Core\Controllers\MachineApi::create', ['filter' => 'permission:schedule.create']);
+    $routes->post('api/machines/(:num)', '\App\Modules\Core\Controllers\MachineApi::update/$1', ['filter' => 'permission:schedule.edit']);
+    $routes->delete('api/machines/(:num)', '\App\Modules\Core\Controllers\MachineApi::delete/$1', ['filter' => 'permission:schedule.delete']);
 
     // API IFS (PRD 5.6)
     $routes->get('api/ifs/datatable', '\App\Modules\Core\Controllers\IfsApi::datatable', ['filter' => 'permission:schedule.create,schedule.edit']);

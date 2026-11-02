@@ -81,6 +81,13 @@ class ScheduleService
             }
             $row = [
                 'id'             => (int) ($it['id'] ?? 0),
+                'dye_lot_no'     => ($d = trim((string) ($it['dye_lot_no'] ?? ''))) !== '' ? $d : null,
+                'kategori'       => in_array($it['kategori'] ?? '', self::CATEGORIES, true) ? $it['kategori'] : 'produksi',
+                'process_id'     => ($it['process_id'] ?? '') !== '' ? (int) $it['process_id'] : null,
+                'shift_id'       => ($it['shift_id'] ?? '') !== '' ? (int) $it['shift_id'] : null,
+                'start_at'       => $dt($it['start_at'] ?? ''),
+                'end_at'         => $dt($it['end_at'] ?? ''),
+                'priority'       => in_array($it['priority'] ?? '', self::PRIORITIES, true) ? $it['priority'] : 'normal',
                 'source_type'    => in_array($it['source_type'] ?? '', ['manual', 'ifs', 'dyeing'], true) ? $it['source_type'] : 'manual',
                 'source_item_id' => ($s = trim((string) ($it['source_item_id'] ?? ''))) !== '' ? $s : null,
                 'notes'          => ($n = trim((string) ($it['notes'] ?? ''))) !== '' ? $n : null,
@@ -166,7 +173,7 @@ class ScheduleService
             }
         }
 
-        // Item & parameter
+        // Item & parameter validation
         if (! $items) {
             $err[] = 'Minimal satu item (order) harus diisi.';
         }
@@ -177,6 +184,29 @@ class ScheduleService
             if (empty($it['order_no'])) {
                 $err[] = "Item #{$n}: No. Order wajib diisi.";
             }
+            
+            // Per-item: Proses wajib
+            if (!$it['process_id']) {
+                $err[] = "Item #{$n}: Proses wajib dipilih.";
+            }
+            
+            // Per-item: Shift wajib
+            if (!$it['shift_id']) {
+                $err[] = "Item #{$n}: Shift wajib dipilih.";
+            }
+            
+            // Per-item: Jam rencana wajib dan valid
+            if (!$it['start_at'] || !$it['end_at']) {
+                $err[] = "Item #{$n}: Jam rencana (mulai dan selesai) wajib diisi.";
+            } elseif ($it['end_at'] <= $it['start_at']) {
+                $err[] = "Item #{$n}: Jam selesai harus setelah jam mulai.";
+            }
+            
+            // Per-item: Validate Dye Lot No format
+            if ($it['dye_lot_no'] && !preg_match('/^JD\d{8}\d{2}\d{2}$/', $it['dye_lot_no'])) {
+                $err[] = "Item #{$n}: Format Dye Lot No tidak valid.";
+            }
+            
             foreach (self::ITEM_TEXT as $f => $max) {
                 if (mb_strlen((string) $it[$f]) > $max) {
                     $err[] = "Item #{$n}: {$f} terlalu panjang (maks {$max}).";
@@ -184,12 +214,12 @@ class ScheduleService
             }
             foreach ($defs as $d) {
                 if ((int) $d['is_required'] === 1 && ! isset($it['params'][$d['code']])) {
-                    $err[] = "Item #{$n}: {$d['name']} wajib diisi.";   // aturan parameter wajib per divisi
+                    $err[] = "Item #{$n}: {$d['name']} wajib diisi.";
                 }
             }
             foreach ($it['params'] as $code => $v) {
                 if (! isset($byCode[$code])) {
-                    continue;   // parameter bukan milik divisi ini diabaikan (aturan 11)
+                    continue;
                 }
                 if ($byCode[$code]['data_type'] === 'number' && ! is_numeric(str_replace(',', '.', $v))) {
                     $err[] = "Item #{$n}: {$byCode[$code]['name']} harus berupa angka.";

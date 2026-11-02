@@ -91,14 +91,108 @@
   }
 
   #tblSchedule thead th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #ffffff !important;
+    box-shadow: inset 0 -1px 0 #dee2e6;
     font-weight: 600;
     font-size: 0.8rem;
     letter-spacing: 0.02em;
+  }
+
+  /* Sticky Row Group Header */
+  #tblSchedule tr.dtrg-group td {
+    position: sticky;
+    top: 33px;
+    /* Adjust based on thead height */
+    z-index: 9;
+    background-color: var(--bs-tertiary-bg) !important;
+    color: var(--bs-emphasis-color);
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.9rem;
+  }
+
+  .print-header {
+    display: none;
+  }
+
+  /* Circular Progress Gauge (Priority Column) */
+  .circle-progress-svg .progress-bar-rail {
+    stroke: #e5e7eb;
+  }
+
+  .circle-progress-svg .progress-bar-top {
+    stroke-dasharray: 339.29;  /* circumference: 2 * π * 54 */
+    stroke-dashoffset: calc(339.29 * (1 - var(--falcon-circle-progress-bar, 0) / 100));
+    transition: stroke-dashoffset 0.6s ease;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+  }
+
+  @media print {
+    @page {
+      size: 215mm 330mm landscape;
+      margin: 8mm;
+    }
+
+    body {
+      background: white !important;
+      color: black !important;
+      font-size: 9pt !important;
+    }
+
+    .navbar, .footer, #insightRow, .card-header, .offcanvas, .btn, #qSearch, .modal, title {
+      display: none !important;
+    }
+
+    .print-header {
+      display: block !important;
+      margin-bottom: 15px;
+    }
+
+    .card, .card-body {
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+
+    th, td {
+      border: 1px solid #dee2e6 !important;
+      padding: 4px 6px !important;
+      font-size: 8.5pt !important;
+      color: black !important;
+    }
+
+    thead th {
+      background-color: #f8f9fa !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
   }
 </style>
 <?= $this->endSection() ?>
 
 <?= $this->section('content') ?>
+<div class="print-header">
+  <div class="d-flex align-items-center">
+    <img src="<?= base_url('assets/img/logos/logo-regency.png') ?>" alt="Logo" width="60" class="me-3">
+    <div>
+      <h4 class="mb-0 fw-bold">PT. Sinar Continental</h4>
+      <h5 class="mb-0">Divisi 3A</h5>
+      <h6 class="mb-0">Jadwal Produksi Departemen Dyeing</h6>
+    </div>
+  </div>
+  <hr class="my-2">
+</div>
 <?php
 $cards = [
   // id, label, tone, ikon, filter saat diklik
@@ -114,14 +208,19 @@ $cards = [
 ?>
 <div class="row g-3 mb-3" id="insightRow">
   <?php foreach ($cards as [$id, $label, $tone, $icon, $flt]): ?>
+    <?php
+    $corner = 'corner-2.png';
+    if ($tone === 'success') $corner = 'corner-3.png';
+    if ($tone === 'info')    $corner = 'corner-2.png';
+    if ($tone === 'warning') $corner = 'corner-1.png';
+    if ($tone === 'danger')  $corner = 'corner-1.png';
+    ?>
     <div class="col-6 col-md-3 col-xxl">
-      <div class="card h-100 <?= $flt ? 'insight-card' : '' ?>" data-card="<?= $id ?>" <?= $flt ? "data-filter='" . esc(json_encode($flt), 'attr') . "'" : '' ?>>
-        <div class="card-body py-3">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <span class="fs-10 text-700"><?= esc($label) ?></span>
-            <span class="fas <?= $icon ?> text-<?= $tone ?>"></span>
-          </div>
-          <div class="fs-6 fw-semi-bold text-<?= $tone ?>" data-val="<?= $id ?>">–</div>
+      <div class="card h-100 overflow-hidden <?= $flt ? 'insight-card' : '' ?>" style="min-width: 12rem" data-card="<?= $id ?>" <?= $flt ? "data-filter='" . esc(json_encode($flt), 'attr') . "'" : '' ?>>
+        <div class="bg-holder bg-card" style="background-image:url(<?= base_url('assets/img/icons/spot-illustrations/' . $corner) ?>);"></div>
+        <div class="card-body position-relative py-3">
+          <h6 class="text-700 mb-1"><?= esc($label) ?> <span class="fas <?= $icon ?> text-<?= $tone ?> float-end"></span></h6>
+          <div class="display-4 fs-5 mb-1 fw-normal font-sans-serif text-<?= $tone ?>" data-val="<?= $id ?>">–</div>
           <div class="fs-11 text-600" data-sub="<?= $id ?>"></div>
         </div>
       </div>
@@ -149,6 +248,7 @@ $cards = [
             <button class="btn btn-falcon-default me-1 d-xl-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#filterOffcanvas"><span class="fas fa-filter"></span> Filter</button>
             <button class="btn btn-falcon-default btn-sm" id="btnExpandAll" type="button" title="Buka semua mesin"><span class="fas fa-angle-double-down"></span></button>
             <button class="btn btn-falcon-default btn-sm" id="btnCollapseAll" type="button" title="Tutup semua mesin"><span class="fas fa-angle-double-up"></span></button>
+            <a href="<?= site_url($moduleName . '/schedule/print?' . $_SERVER['QUERY_STRING']) ?>" target="_blank" class="btn btn-falcon-default btn-sm" title="Cetak Jadwal"><span class="fas fa-print"></span></a>
             <?php if ($canCreate): ?>
               <a href="<?= site_url($moduleName . '/schedule/create') ?>" class="btn btn-falcon-primary btn-sm"><span class="fas fa-plus"></span> Jadwal Baru</a>
             <?php endif ?>
@@ -158,23 +258,23 @@ $cards = [
       <div class="card-body p-0">
         <div id="dtError" class="alert alert-danger fs-10 m-3 d-none" role="alert"></div>
         <table id="tblSchedule" class="table table-hover table-sm fs-10 mb-0 w-100">
-          <thead class="bg-body-tertiary text-800">
+          <thead class="bg-secondary text-white">
             <tr>
-              <th>Aksi</th>
-              <th>Urutan</th>
-              <th>Dye Lot No /<br> Kategori</th>
-              <th>No DOP</th>
-              <th>Tanggal /<br> Shift</th>
-              <th>Desain /<br> Segment</th>
-              <th>Warna</th>
-              <th>No. MP</th>
-              <th>Catatan</th>
-              <th>Proses</th>
-              <th>Cuci Mesin</th>
-              <th>Jam Rencana</th>
-              <th>Prioritas</th>
-              <th>Status</th>
-              <th>Operator</th>
+              <th style="color: white;">Aksi</th>
+              <th style="color: white;">Urutan</th>
+              <th style="color: white;">Dye Lot No /<br> Kategori</th>
+              <th style="color: white;">No DOP</th>
+              <th style="color: white;">Tanggal /<br> Shift</th>
+              <th style="color: white;">Desain /<br> Segment</th>
+              <th style="color: white;">Warna</th>
+              <th style="color: white;">No. MP</th>
+              <th style="color: white;">Catatan</th>
+              <th style="color: white;">Proses</th>
+              <th style="color: white;">Cuci Mesin</th>
+              <th style="color: white;">Jam Rencana</th>
+              <th style="color: white;">Prioritas</th>
+              <th style="color: white;">Status</th>
+              <th style="color: white;">Operator</th>
               <th class="d-none">Mesin</th>
               <th class="d-none">Kode</th>
             </tr>
@@ -196,11 +296,11 @@ $cards = [
         </div>
         <div class="card-body">
           <div class="btn-group btn-group-sm w-100 mb-3" role="group" aria-label="Pintasan periode">
-            <button type="button" class="btn btn-falcon-secondary" data-preset="today">Hari ini</button>
-            <button type="button" class="btn btn-falcon-secondary" data-preset="tomorrow">Besok</button>
-            <button type="button" class="btn btn-falcon-secondary" data-preset="week">Minggu ini</button>
+            <button type="button" class="btn btn-outline-primary" data-preset="today">Hari ini</button>
+            <button type="button" class="btn btn-outline-primary" data-preset="tomorrow">Besok</button>
+            <button type="button" class="btn btn-outline-primary" data-preset="week">Minggu ini</button>
           </div>
-          <button type="button" class="btn btn-sm btn-falcon-secondary w-100 mb-3" data-preset="approval"><span class="fas fa-clock me-1 text-warning"></span>Perlu Approval</button>
+          <button type="button" class="btn btn-sm btn-falcon-warning w-100 mb-3" data-preset="approval"><span class="fas fa-clock me-1 text-warning"></span>Perlu Approval</button>
           <form id="filterForm" onsubmit="return false">
             <label class="mb-1 fs-10" for="fDateRange">Rentang tanggal</label>
             <input type="text" id="fDateRange" class="form-control form-control-sm mb-2" placeholder="Pilih rentang tanggal">
@@ -546,8 +646,8 @@ $cards = [
             const design = parts[0];
             const segment = parts.length > 1 ? ' / ' + parts.slice(1).join(' / ') : '';
 
-            return `<span class="fw-bold fs-9 text-emphasis">${esc(design)}</span><span class="text-600">${esc(segment)}</span>` +
-              ` <button type="button" class="btn btn-falcon-default btn-sm ms-2 btn-param-detail px-2 py-1" data-params="${pStr}" title="Lihat Parameter"><span class="fas fa-sliders-h text-primary fs-10"></span></button>`;
+            return `<span class="fs-10 text-emphasis">${esc(design)}</span><span class="text-600">${esc(segment)}</span>` +
+              ` <button type="button" class="btn btn-falcon-default btn-sm ms-2 btn-param-detail px-2 py-1 btn-sm" data-params="${pStr}" title="Lihat Parameter"><span class="fas fa-sliders-h text-primary fs-10"></span></button>`;
           }
         },
         {
@@ -577,8 +677,14 @@ $cards = [
         {
           data: 'param_CUCI_MESIN',
           orderable: false,
-          className: 'align-middle',
-          render: (d) => esc(d || '–')
+          className: 'align-middle text-center',
+          render: (d, t, r) => {
+            const falseValues = [null, undefined, '', 0, '0', 'tidak', 'no', false];
+            const checked = !falseValues.includes(d) ? 'checked' : '';
+            return `<div class="form-check form-switch d-inline-block m-0">
+                      <input class="form-check-input" type="checkbox" role="switch" ${checked} disabled />
+                    </div>`;
+          }
         },
         {
           data: 'start_at',
@@ -589,15 +695,36 @@ $cards = [
         {
           data: 'priority',
           orderable: false,
-          className: 'align-middle',
-          render: (d) => {
-            const prioMap = {
-              'normal': ['Normal', 'secondary', 'fa-minus'],
-              'high': ['Tinggi', 'warning', 'fa-arrow-up'],
-              'urgent': ['Urgent', 'danger', 'fa-exclamation']
+          className: 'align-middle priority pe-4',
+          render: (d, t, r) => {
+            const prioColors = {
+              'urgent': '#e63757',
+              'high': '#f6ad55',
+              'normal': '#2563eb'
             };
-            const p = prioMap[d] || [d, 'secondary', 'fa-minus'];
-            return `<span class="badge badge-subtle-${p[1]}"><span class="fas ${p[2]} me-1"></span>${esc(p[0])}</span>`;
+            const prioNames = {
+              'urgent': 'Urgent',
+              'high': 'High',
+              'normal': 'Medium'
+            };
+            const color = prioColors[d] || '#2563eb';
+            const name = prioNames[d] || 'Medium';
+
+            // Hitung persentase progress (jika ada actual_start atau dari field progress, default 0 jika belum mulai)
+            let percent = 0;
+            if (r.actual_start) {
+              percent = parseInt(r.progress || 0, 10);
+            }
+
+            return `<div class="d-flex align-items-center gap-2">
+                      <div style="--falcon-circle-progress-bar:${percent}">
+                        <svg class="circle-progress-svg" width="26" height="26" viewBox="0 0 120 120">
+                          <circle class="progress-bar-rail" cx="60" cy="60" r="54" fill="none" stroke-linecap="round" stroke-width="12"></circle>
+                          <circle class="progress-bar-top" cx="60" cy="60" r="54" fill="none" stroke-linecap="round" stroke="${color}" stroke-width="12"></circle>
+                        </svg>
+                      </div>
+                      <h6 class="mb-0 text-700">${esc(name)}</h6>
+                    </div>`;
           }
         },
         {
@@ -703,8 +830,12 @@ $cards = [
         });
         const d = await r.json();
         const set = (k, v, sub) => {
-          $(`[data-val="${k}"]`).text(v);
-          $(`[data-sub="${k}"]`).text(sub || '');
+          const $val = $(`[data-val="${k}"]`);
+          const $sub = $(`[data-sub="${k}"]`);
+          
+          // Animasi angka jika menggunakan countUp (opsional, di sini kita set langsung dulu)
+          $val.text(v);
+          $sub.text(sub || '');
         };
         set('today', d.today, date === TODAY ? 'hari ini' : date);
         set('waiting', d.waiting, 'semua tanggal');
@@ -715,7 +846,7 @@ $cards = [
         set('utilization', d.utilization + '%', 'jam terjadwal ÷ jam tersedia');
         set('qty', num(d.qty) + ' ' + (d.qty_uom || ''), d.qty_name);
       } catch (e) {
-        /* kartu opsional; tabel tetap jalan */
+        console.error('Insight error:', e);
       }
     }
 

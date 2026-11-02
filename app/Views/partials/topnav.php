@@ -18,7 +18,10 @@ $nTotal  = array_sum(array_column($notifs, 'count'));
     <span class="navbar-toggle-icon"><span class="toggle-line"></span></span>
   </button>
   <a class="navbar-brand me-1 me-sm-3" href="<?= site_url('/') ?>">
-    <span class="font-sans-serif text-primary fw-bold">ERPDF</span>
+    <div class="d-flex align-items-center">
+      <img src="<?= base_url('assets/img/logos/logo-regency.png') ?>" alt="Logo" width="35" class="me-2">
+      <span class="font-sans-serif fw-bold text-secondary">ERP</span><span class="font-sans-serif fw-bold text-primary">DF</span>
+    </div>
   </a>
 
   <div class="collapse navbar-collapse scrollbar" id="navbarTopCollapse">

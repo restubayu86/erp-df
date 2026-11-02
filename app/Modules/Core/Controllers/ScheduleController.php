@@ -35,6 +35,40 @@ abstract class ScheduleController extends BaseModuleController
         ], 'Schedule Produksi ' . ucfirst($this->moduleName), [ucfirst($this->moduleName) => null, 'Schedule Produksi' => null]);
     }
 
+    public function print()
+    {
+        $svc = new ScheduleService();
+        $builder = db_connect()->table('schedules s')
+            ->select("s.*, m.code AS machine_code, m.name AS machine_name, sh.name AS shift_name, p.name AS process_name")
+            ->join('machines m', 'm.id = s.machine_id')
+            ->join('shifts sh', 'sh.id = s.shift_id')
+            ->join('processes p', 'p.id = s.process_id', 'left')
+            ->where('s.division', $this->moduleType)
+            ->where('s.deleted_at', null)
+            ->orderBy('s.work_date', 'ASC')
+            ->orderBy('m.code', 'ASC')
+            ->orderBy('s.sequence', 'ASC');
+
+        $this->applyFilters($builder);
+        $schedules = $builder->get()->getResultArray();
+
+        // Ambil item dan parameter untuk setiap schedule
+        foreach ($schedules as &$s) {
+            $s['items'] = db_connect()->table('schedule_items i')
+                ->select("i.*, (SELECT GROUP_CONCAT(CONCAT(p.code, ': ', ip.value_num) SEPARATOR ', ') 
+                          FROM schedule_item_params ip 
+                          JOIN parameters p ON p.id = ip.parameter_id 
+                          WHERE ip.schedule_item_id = i.id AND ip.kind = 'plan') as params")
+                ->where('i.schedule_id', $s['id'])
+                ->get()->getResultArray();
+        }
+
+        return view('App\Modules\Core\Views\schedule\print', [
+            'schedules' => $schedules,
+            'moduleName' => $this->moduleName
+        ]);
+    }
+
     /** Kartu insight (PRD 5.8), dimuat via AJAX. */
     public function insight()
     {
@@ -61,6 +95,7 @@ abstract class ScheduleController extends BaseModuleController
             ->select("s.id AS id, s.sequence AS sequence, s.schedule_no AS schedule_no, s.work_date AS work_date, sh.name AS shift, "
                 . "s.category AS category, "
                 . "p.name AS process, s.start_at AS start_at, s.end_at AS end_at, s.priority AS priority, s.status AS status, "
+                . "s.actual_start AS actual_start, s.progress AS progress, "
                 . "s.revision_no AS revision_no, u.username AS current_operator, m.code AS machine_code, "
                 . "CONCAT(m.code, ' – ', m.name) AS machine, "
                 . '(SELECT i.order_no FROM schedule_items i WHERE i.schedule_id = s.id ORDER BY i.line_no LIMIT 1) AS order_first, '

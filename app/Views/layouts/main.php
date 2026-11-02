@@ -9,7 +9,7 @@
   <meta name="csrf-header" content="<?= csrf_header() ?>">
   <meta name="csrf-token" content="<?= csrf_hash() ?>">
   <title><?= esc((string)$this->renderSection('title')) ?> | <?= esc(app_name()) ?></title>
-  <link rel="icon" type="image/x-icon" href="<?= base_url('assets/img/favicons/favicon.ico') ?>">
+  <link rel="icon" type="image/png" href="<?= base_url('assets/img/favicons/favicon.png') ?>">
 
   <script src="<?= base_url('assets/js/config.js') ?>"></script>
   <script src="<?= base_url('assets/vendors/simplebar/simplebar.min.js') ?>"></script>
